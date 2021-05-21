@@ -37,6 +37,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.0.1
 	go.etcd.io/bbolt v1.3.4
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.2.8
 )

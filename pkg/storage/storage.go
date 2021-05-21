@@ -22,6 +22,7 @@ import (
 	"github.com/opencontainers/umoci"
 	"github.com/opencontainers/umoci/oci/casext"
 	"github.com/rs/zerolog"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -1200,13 +1201,17 @@ func ensureDir(dir string, log zerolog.Logger) error {
 func ifOlderThan(is *ImageStore, repo string, delay time.Duration) casext.GCPolicy {
 	return func(ctx context.Context, digest godigest.Digest) (bool, error) {
 		blobPath := is.BlobPath(repo, digest)
-		fi, err := os.Stat(blobPath)
+
+		var fi unix.Stat_t
+		err := unix.Stat(blobPath, &fi)
 
 		if err != nil {
 			return false, err
 		}
 
-		if fi.ModTime().Add(delay).After(time.Now()) {
+		ctim := time.Unix(fi.Ctim.Sec, fi.Ctim.Nsec)
+
+		if ctim.Add(delay).After(time.Now()) {
 			return false, nil
 		}
 
