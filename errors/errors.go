@@ -9,6 +9,7 @@ var (
 	ErrRepoBadVersion          = errors.New("repository: unsupported layout version")
 	ErrManifestNotFound        = errors.New("manifest: not found")
 	ErrBadManifest             = errors.New("manifest: invalid contents")
+	ErrBadIndex                = errors.New("index: invalid contents")
 	ErrUploadNotFound          = errors.New("uploads: not found")
 	ErrBadUploadRange          = errors.New("uploads: bad range")
 	ErrBlobNotFound            = errors.New("blob: not found")
@@ -37,4 +38,5 @@ var (
 	ErrScanNotSupported        = errors.New("search: scanning of image media type not supported")
 	ErrCLITimeout              = errors.New("cli: Query timed out while waiting for results")
 	ErrDuplicateConfigName     = errors.New("cli: cli config name already added")
+	ErrEmptyRepoList           = errors.New("extension: no repository found")
 )
