@@ -28,7 +28,7 @@ jobs:
           go get -u github.com/swaggo/swag/cmd/swag
           go mod download
           sudo apt-get update
-          sudo apt-get install rpm
+          sudo apt-get install rpm libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
           sudo apt install snapd
           sudo snap install skopeo --edge --devmode
 

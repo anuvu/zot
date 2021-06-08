@@ -26,6 +26,7 @@ import (
 
 	"github.com/anuvu/zot/errors"
 	"github.com/anuvu/zot/pkg/api"
+	"github.com/anuvu/zot/pkg/api/config"
 	"github.com/chartmuseum/auth"
 	"github.com/mitchellh/mapstructure"
 	godigest "github.com/opencontainers/go-digest"
@@ -123,9 +124,9 @@ func getCredString(username, password string) string {
 
 func TestNew(t *testing.T) {
 	Convey("Make a new controller", t, func() {
-		config := api.NewConfig()
-		So(config, ShouldNotBeNil)
-		So(api.NewController(config), ShouldNotBeNil)
+		conf := config.New()
+		So(conf, ShouldNotBeNil)
+		So(api.NewController(conf), ShouldNotBeNil)
 	})
 }
 
@@ -141,17 +142,17 @@ func TestHtpasswdSingleCred(t *testing.T) {
 
 		for _, testString := range singleCredtests {
 			func() {
-				config := api.NewConfig()
-				config.HTTP.Port = port
+				conf := config.New()
+				conf.HTTP.Port = port
 
 				htpasswdPath := makeHtpasswdFileFromString(testString)
 				defer os.Remove(htpasswdPath)
-				config.HTTP.Auth = &api.AuthConfig{
-					HTPasswd: api.AuthHTPasswd{
+				conf.HTTP.Auth = &config.AuthConfig{
+					HTPasswd: config.AuthHTPasswd{
 						Path: htpasswdPath,
 					},
 				}
-				c := api.NewController(config)
+				c := api.NewController(conf)
 				dir, err := ioutil.TempDir("", "oci-repo-test")
 				if err != nil {
 					panic(err)
@@ -210,16 +211,16 @@ func TestHtpasswdTwoCreds(t *testing.T) {
 			func() {
 				port := getFreePort()
 				baseURL := getBaseURL(port, false)
-				config := api.NewConfig()
-				config.HTTP.Port = port
+				conf := config.New()
+				conf.HTTP.Port = port
 				htpasswdPath := makeHtpasswdFileFromString(testString)
 				defer os.Remove(htpasswdPath)
-				config.HTTP.Auth = &api.AuthConfig{
-					HTPasswd: api.AuthHTPasswd{
+				conf.HTTP.Auth = &config.AuthConfig{
+					HTPasswd: config.AuthHTPasswd{
 						Path: htpasswdPath,
 					},
 				}
-				c := api.NewController(config)
+				c := api.NewController(conf)
 				dir, err := ioutil.TempDir("", "oci-repo-test")
 				if err != nil {
 					panic(err)
@@ -279,16 +280,16 @@ func TestHtpasswdFiveCreds(t *testing.T) {
 		func() {
 			port := getFreePort()
 			baseURL := getBaseURL(port, false)
-			config := api.NewConfig()
-			config.HTTP.Port = port
+			conf := config.New()
+			conf.HTTP.Port = port
 			htpasswdPath := makeHtpasswdFileFromString(credString.String())
 			defer os.Remove(htpasswdPath)
-			config.HTTP.Auth = &api.AuthConfig{
-				HTPasswd: api.AuthHTPasswd{
+			conf.HTTP.Auth = &config.AuthConfig{
+				HTPasswd: config.AuthHTPasswd{
 					Path: htpasswdPath,
 				},
 			}
-			c := api.NewController(config)
+			c := api.NewController(conf)
 			dir, err := ioutil.TempDir("", "oci-repo-test")
 			if err != nil {
 				panic(err)
@@ -332,17 +333,17 @@ func TestBasicAuth(t *testing.T) {
 	Convey("Make a new controller", t, func() {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFile()
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -394,17 +395,17 @@ func TestMultipleInstance(t *testing.T) {
 	Convey("Negative test zot multiple instance", t, func() {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFile()
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		err := c.Run()
 		So(err, ShouldEqual, errors.ErrImgStoreNotFound)
 
@@ -421,9 +422,9 @@ func TestMultipleInstance(t *testing.T) {
 		defer os.RemoveAll(subDir)
 
 		c.Config.Storage.RootDirectory = globalDir
-		subPathMap := make(map[string]api.StorageConfig)
+		subPathMap := make(map[string]config.StorageConfig)
 
-		subPathMap["/a"] = api.StorageConfig{RootDirectory: subDir}
+		subPathMap["/a"] = config.StorageConfig{RootDirectory: subDir}
 
 		go func() {
 			if err := c.Run(); err != nil {
@@ -456,17 +457,17 @@ func TestMultipleInstance(t *testing.T) {
 	Convey("Test zot multiple instance", t, func() {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFile()
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		globalDir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -480,9 +481,9 @@ func TestMultipleInstance(t *testing.T) {
 		defer os.RemoveAll(subDir)
 
 		c.Config.Storage.RootDirectory = globalDir
-		subPathMap := make(map[string]api.StorageConfig)
+		subPathMap := make(map[string]config.StorageConfig)
 
-		subPathMap["/a"] = api.StorageConfig{RootDirectory: subDir}
+		subPathMap["/a"] = config.StorageConfig{RootDirectory: subDir}
 		go func() {
 			// this blocks
 			if err := c.Run(); err != nil {
@@ -539,19 +540,19 @@ func TestTLSWithBasicAuth(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.TLS = &api.TLSConfig{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert: ServerCert,
 			Key:  ServerKey,
 		}
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -620,20 +621,20 @@ func TestTLSWithBasicAuthAllowReadAccess(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		config.HTTP.TLS = &api.TLSConfig{
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert: ServerCert,
 			Key:  ServerKey,
 		}
-		config.HTTP.AllowReadAccess = true
+		conf.HTTP.AllowReadAccess = true
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -701,15 +702,15 @@ func TestTLSMutualAuth(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.TLS = &api.TLSConfig{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert:   ServerCert,
 			Key:    ServerKey,
 			CACert: CACert,
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -789,16 +790,16 @@ func TestTLSMutualAuthAllowReadAccess(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.TLS = &api.TLSConfig{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert:   ServerCert,
 			Key:    ServerKey,
 			CACert: CACert,
 		}
-		config.HTTP.AllowReadAccess = true
+		conf.HTTP.AllowReadAccess = true
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -887,20 +888,20 @@ func TestTLSMutualAndBasicAuth(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		config.HTTP.TLS = &api.TLSConfig{
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert:   ServerCert,
 			Key:    ServerKey,
 			CACert: CACert,
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -985,21 +986,21 @@ func TestTLSMutualAndBasicAuthAllowReadAccess(t *testing.T) {
 
 		resty.SetTLSClientConfig(&tls.Config{RootCAs: caCertPool})
 		defer func() { resty.SetTLSClientConfig(nil) }()
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
-		config.HTTP.TLS = &api.TLSConfig{
+		conf.HTTP.TLS = &config.TLSConfig{
 			Cert:   ServerCert,
 			Key:    ServerKey,
 			CACert: CACert,
 		}
-		config.HTTP.AllowReadAccess = true
+		conf.HTTP.AllowReadAccess = true
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -1159,10 +1160,10 @@ func TestBasicAuthWithLDAP(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
-		config.HTTP.Auth = &api.AuthConfig{
-			LDAP: &api.LDAPConfig{
+		conf := config.New()
+		conf.HTTP.Port = port
+		conf.HTTP.Auth = &config.AuthConfig{
+			LDAP: &config.LDAPConfig{
 				Insecure:      true,
 				Address:       LDAPAddress,
 				Port:          LDAPPort,
@@ -1172,7 +1173,7 @@ func TestBasicAuthWithLDAP(t *testing.T) {
 				UserAttribute: "uid",
 			},
 		}
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
 			panic(err)
@@ -1228,20 +1229,20 @@ func TestBearerAuth(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 
 		u, err := url.Parse(authTestServer.URL)
 		So(err, ShouldBeNil)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			Bearer: &api.BearerConfig{
+		conf.HTTP.Auth = &config.AuthConfig{
+			Bearer: &config.BearerConfig{
 				Cert:    ServerCert,
 				Realm:   authTestServer.URL + "/auth/token",
 				Service: u.Host,
 			},
 		}
-		c := api.NewController(config)
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(dir)
@@ -1410,21 +1411,21 @@ func TestBearerAuthWithAllowReadAccess(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 
 		u, err := url.Parse(authTestServer.URL)
 		So(err, ShouldBeNil)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			Bearer: &api.BearerConfig{
+		conf.HTTP.Auth = &config.AuthConfig{
+			Bearer: &config.BearerConfig{
 				Cert:    ServerCert,
 				Realm:   authTestServer.URL + "/auth/token",
 				Service: u.Host,
 			},
 		}
-		config.HTTP.AllowReadAccess = true
-		c := api.NewController(config)
+		conf.HTTP.AllowReadAccess = true
+		c := api.NewController(conf)
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(dir)
@@ -1644,19 +1645,19 @@ func TestInvalidCases(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFileFromString(getCredString(username, passphrase))
 
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		err := os.Mkdir("oci-repo-test", 0000)
 		if err != nil {
@@ -1713,19 +1714,19 @@ func TestHTTPReadOnly(t *testing.T) {
 
 		for _, testString := range singleCredtests {
 			func() {
-				config := api.NewConfig()
-				config.HTTP.Port = port
+				conf := config.New()
+				conf.HTTP.Port = port
 				// enable read-only mode
-				config.HTTP.ReadOnly = true
+				conf.HTTP.ReadOnly = true
 
 				htpasswdPath := makeHtpasswdFileFromString(testString)
 				defer os.Remove(htpasswdPath)
-				config.HTTP.Auth = &api.AuthConfig{
-					HTPasswd: api.AuthHTPasswd{
+				conf.HTTP.Auth = &config.AuthConfig{
+					HTPasswd: config.AuthHTPasswd{
 						Path: htpasswdPath,
 					},
 				}
-				c := api.NewController(config)
+				c := api.NewController(conf)
 				dir, err := ioutil.TempDir("", "oci-repo-test")
 				if err != nil {
 					panic(err)
@@ -1778,19 +1779,19 @@ func TestCrossRepoMount(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFileFromString(getCredString(username, passphrase))
 
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		dir, err := ioutil.TempDir("", "oci-repo-test")
 		if err != nil {
@@ -1981,19 +1982,19 @@ func TestCrossRepoMount(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFileFromString(getCredString(username, passphrase))
 
 		defer os.Remove(htpasswdPath)
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		//defer stopServer(c)
 
@@ -2138,17 +2139,17 @@ func TestParallelRequests(t *testing.T) {
 	port := getFreePort()
 	baseURL := getBaseURL(port, false)
 
-	config := api.NewConfig()
-	config.HTTP.Port = port
+	conf := config.New()
+	conf.HTTP.Port = port
 	htpasswdPath := makeHtpasswdFileFromString(getCredString(username, passphrase))
 
-	config.HTTP.Auth = &api.AuthConfig{
-		HTPasswd: api.AuthHTPasswd{
+	conf.HTTP.Auth = &config.AuthConfig{
+		HTPasswd: config.AuthHTPasswd{
 			Path: htpasswdPath,
 		},
 	}
 
-	c := api.NewController(config)
+	c := api.NewController(conf)
 
 	dir, err := ioutil.TempDir("", "oci-repo-test")
 	if err != nil {
@@ -2165,10 +2166,10 @@ func TestParallelRequests(t *testing.T) {
 		panic(err)
 	}
 
-	subPaths := make(map[string]api.StorageConfig)
+	subPaths := make(map[string]config.StorageConfig)
 
-	subPaths["/a"] = api.StorageConfig{RootDirectory: firstSubDir}
-	subPaths["/b"] = api.StorageConfig{RootDirectory: secondSubDir}
+	subPaths["/a"] = config.StorageConfig{RootDirectory: firstSubDir}
+	subPaths["/b"] = config.StorageConfig{RootDirectory: secondSubDir}
 
 	c.Config.Storage.SubPaths = subPaths
 
@@ -2532,17 +2533,17 @@ func TestHardLink(t *testing.T) {
 		port := getFreePort()
 		baseURL := getBaseURL(port, false)
 
-		config := api.NewConfig()
-		config.HTTP.Port = port
+		conf := config.New()
+		conf.HTTP.Port = port
 		htpasswdPath := makeHtpasswdFileFromString(getCredString(username, passphrase))
 
-		config.HTTP.Auth = &api.AuthConfig{
-			HTPasswd: api.AuthHTPasswd{
+		conf.HTTP.Auth = &config.AuthConfig{
+			HTPasswd: config.AuthHTPasswd{
 				Path: htpasswdPath,
 			},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		dir, err := ioutil.TempDir("", "hard-link-test")
 		if err != nil {
@@ -2567,9 +2568,9 @@ func TestHardLink(t *testing.T) {
 		}
 
 		c.Config.Storage.RootDirectory = dir
-		subPaths := make(map[string]api.StorageConfig)
+		subPaths := make(map[string]config.StorageConfig)
 
-		subPaths["/a"] = api.StorageConfig{RootDirectory: subDir, Dedupe: true}
+		subPaths["/a"] = config.StorageConfig{RootDirectory: subDir, Dedupe: true}
 
 		c.Config.Storage.SubPaths = subPaths
 
