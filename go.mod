@@ -11,6 +11,7 @@ require (
 	github.com/briandowns/spinner v1.11.1
 	github.com/chartmuseum/auth v0.4.0
 	github.com/dustin/go-humanize v1.0.0
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-ldap/ldap/v3 v3.1.3
@@ -42,6 +43,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.0.1
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.4.0
 )
