@@ -5,6 +5,7 @@ FROM docker.io/golang:1.15.3 AS builder
 RUN mkdir -p /go/src/github.com/anuvu/zot
 WORKDIR /go/src/github.com/anuvu/zot
 COPY . .
+RUN apt-get update && apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
 RUN CGO_ENABLED=0 make clean binary
 RUN echo '{\n\
     "storage": {\n\

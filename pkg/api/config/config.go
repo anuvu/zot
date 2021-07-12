@@ -1,9 +1,10 @@
-package api
+package config
 
 import (
 	"github.com/anuvu/zot/errors"
-	ext "github.com/anuvu/zot/pkg/extensions"
+	ext "github.com/anuvu/zot/pkg/extensions/config"
 	"github.com/anuvu/zot/pkg/log"
+	"github.com/containers/image/v5/types"
 	"github.com/getlantern/deepcopy"
 	dspec "github.com/opencontainers/distribution-spec"
 )
@@ -90,7 +91,7 @@ type Config struct {
 	Extensions *ext.ExtensionConfig
 }
 
-func NewConfig() *Config {
+func New() *Config {
 	return &Config{
 		Version:    dspec.Version,
 		Commit:     Commit,
@@ -103,12 +104,12 @@ func NewConfig() *Config {
 
 // Sanitize makes a sanitized copy of the config removing any secrets.
 func (c *Config) Sanitize() *Config {
-	if c.HTTP.Auth != nil && c.HTTP.Auth.LDAP != nil && c.HTTP.Auth.LDAP.BindPassword != "" {
-		s := &Config{}
-		if err := deepcopy.Copy(s, c); err != nil {
-			panic(err)
-		}
+	s := &Config{}
+	if err := deepcopy.Copy(s, c); err != nil {
+		panic(err)
+	}
 
+	if c.HTTP.Auth != nil && c.HTTP.Auth.LDAP != nil && c.HTTP.Auth.LDAP.BindPassword != "" {
 		s.HTTP.Auth.LDAP = &LDAPConfig{}
 
 		if err := deepcopy.Copy(s.HTTP.Auth.LDAP, c.HTTP.Auth.LDAP); err != nil {
@@ -116,6 +117,28 @@ func (c *Config) Sanitize() *Config {
 		}
 
 		s.HTTP.Auth.LDAP.BindPassword = "******"
+
+		return s
+	}
+
+	if c.Extensions != nil && c.Extensions.Sync != nil {
+		s.Extensions = &ext.ExtensionConfig{}
+
+		if err := deepcopy.Copy(s.Extensions, c.Extensions); err != nil {
+			panic(err)
+		}
+
+		regCfgs := *s.Extensions.Sync
+
+		for id, regCfg := range *s.Extensions.Sync {
+			if regCfg.Credentials != (types.DockerAuthConfig{}) {
+				regCfg.Credentials.Password = "******"
+			}
+
+			regCfgs[id] = regCfg
+		}
+
+		s.Extensions.Sync = &regCfgs
 
 		return s
 	}

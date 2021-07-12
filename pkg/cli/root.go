@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/anuvu/zot/errors"
 	"github.com/anuvu/zot/pkg/api"
+	"github.com/anuvu/zot/pkg/api/config"
 	"github.com/anuvu/zot/pkg/storage"
 	"github.com/mitchellh/mapstructure"
 	dspec "github.com/opencontainers/distribution-spec"
@@ -21,7 +22,7 @@ func metadataConfig(md *mapstructure.Metadata) viper.DecoderConfigOption {
 
 func NewRootCmd() *cobra.Command {
 	showVersion := false
-	config := api.NewConfig()
+	conf := config.New()
 
 	// "serve"
 	serveCmd := &cobra.Command{
@@ -37,7 +38,7 @@ func NewRootCmd() *cobra.Command {
 				}
 
 				md := &mapstructure.Metadata{}
-				if err := viper.Unmarshal(&config, metadataConfig(md)); err != nil {
+				if err := viper.Unmarshal(&conf, metadataConfig(md)); err != nil {
 					panic(err)
 				}
 
@@ -47,7 +48,7 @@ func NewRootCmd() *cobra.Command {
 					panic(errors.ErrBadConfig)
 				}
 			}
-			c := api.NewController(config)
+			c := api.NewController(conf)
 			if err := c.Run(); err != nil {
 				panic(err)
 			}
@@ -64,16 +65,16 @@ func NewRootCmd() *cobra.Command {
 		Short:   "`garbage-collect` deletes layers not referenced by any manifests",
 		Long:    "`garbage-collect` deletes layers not referenced by any manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			log.Info().Interface("values", config).Msg("configuration settings")
-			if config.Storage.RootDirectory != "" {
-				if err := storage.Scrub(config.Storage.RootDirectory, gcDryRun); err != nil {
+			log.Info().Interface("values", conf).Msg("configuration settings")
+			if conf.Storage.RootDirectory != "" {
+				if err := storage.Scrub(conf.Storage.RootDirectory, gcDryRun); err != nil {
 					panic(err)
 				}
 			}
 		},
 	}
 
-	gcCmd.Flags().StringVarP(&config.Storage.RootDirectory, "storage-root-dir", "r", "",
+	gcCmd.Flags().StringVarP(&conf.Storage.RootDirectory, "storage-root-dir", "r", "",
 		"Use specified directory for filestore backing image data")
 
 	_ = gcCmd.MarkFlagRequired("storage-root-dir")
@@ -88,8 +89,8 @@ func NewRootCmd() *cobra.Command {
 		Long:  "`zot`",
 		Run: func(cmd *cobra.Command, args []string) {
 			if showVersion {
-				log.Info().Str("distribution-spec", dspec.Version).Str("commit", api.Commit).
-					Str("binary-type", api.BinaryType).Msg("version")
+				log.Info().Str("distribution-spec", dspec.Version).Str("commit", config.Commit).
+					Str("binary-type", config.BinaryType).Msg("version")
 			}
 			_ = cmd.Usage()
 		},

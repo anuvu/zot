@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/anuvu/zot/pkg/api"
-	ext "github.com/anuvu/zot/pkg/extensions"
+	"github.com/anuvu/zot/pkg/api/config"
+	extConf "github.com/anuvu/zot/pkg/extensions/config"
 	digestinfo "github.com/anuvu/zot/pkg/extensions/search/digest"
 	"github.com/anuvu/zot/pkg/log"
 	"github.com/anuvu/zot/pkg/storage"
@@ -165,14 +166,14 @@ func TestDigestInfo(t *testing.T) {
 
 func TestDigestSearchHTTP(t *testing.T) {
 	Convey("Test image search by digest scanning", t, func() {
-		config := api.NewConfig()
-		config.HTTP.Port = Port1
-		config.Storage.RootDirectory = rootDir
-		config.Extensions = &ext.ExtensionConfig{
-			Search: &ext.SearchConfig{Enable: true},
+		conf := config.New()
+		conf.HTTP.Port = Port1
+		conf.Storage.RootDirectory = rootDir
+		conf.Extensions = &extConf.ExtensionConfig{
+			Search: &extConf.SearchConfig{Enable: true},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		go func() {
 			// this blocks
@@ -293,14 +294,14 @@ func TestDigestSearchDisabled(t *testing.T) {
 	Convey("Test disabling image search", t, func() {
 		dir, err := ioutil.TempDir("", "digest_test")
 		So(err, ShouldBeNil)
-		config := api.NewConfig()
-		config.HTTP.Port = Port1
-		config.Storage.RootDirectory = dir
-		config.Extensions = &ext.ExtensionConfig{
-			Search: &ext.SearchConfig{Enable: false},
+		conf := config.New()
+		conf.HTTP.Port = Port1
+		conf.Storage.RootDirectory = dir
+		conf.Extensions = &extConf.ExtensionConfig{
+			Search: &extConf.SearchConfig{Enable: false},
 		}
 
-		c := api.NewController(config)
+		c := api.NewController(conf)
 
 		go func() {
 			// this blocks
