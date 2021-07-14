@@ -25,7 +25,11 @@ debug: doc
 .PHONY: test
 test:
 	$(shell mkdir -p test/data;  cd test/data; ../scripts/gen_certs.sh; cd ${TOP_LEVEL}; sudo skopeo --insecure-policy copy -q docker://public.ecr.aws/t0x7q1g8/centos:7 oci:${TOP_LEVEL}/test/data/zot-test:0.0.1;sudo skopeo --insecure-policy copy -q docker://public.ecr.aws/t0x7q1g8/centos:8 oci:${TOP_LEVEL}/test/data/zot-cve-test:0.0.1)
+	$(shell sudo mkdir -p /etc/containers/certs.d/127.0.0.1:8088/; sudo cp test/data/client.* /etc/containers/certs.d/127.0.0.1:8088/; sudo cp test/data/ca.* /etc/containers/certs.d/127.0.0.1:8088/;)
+	$(shell sudo chmod o+rx /etc/containers/certs.d/127.0.0.1:8088/*.key)
 	go test -tags extended -v -race -cover -coverpkg ./... -coverprofile=coverage.txt -covermode=atomic ./...
+	$(shell sudo rm -rf /etc/containers/certs.d/127.0.0.1:8088/)
+
 
 .PHONY: covhtml
 covhtml:

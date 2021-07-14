@@ -6,11 +6,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -19,8 +22,16 @@ import (
 )
 
 var httpClient *http.Client //nolint: gochecknoglobals
+var mux sync.Mutex          //nolint: gochecknoglobals
 
-const httpTimeout = 5 * time.Minute
+const (
+	httpTimeout        = 5 * time.Minute
+	certsPath          = "/etc/containers/certs.d"
+	homeCertsDir       = ".config/containers/certs.d"
+	clientCertFilename = "client.cert"
+	clientKeyFilename  = "client.key"
+	caCertFilename     = "ca.crt"
+)
 
 func createHTTPClient(verifyTLS bool) *http.Client {
 	var tr = http.DefaultTransport.(*http.Transport).Clone()
@@ -74,6 +85,49 @@ func doHTTPRequest(req *http.Request, verifyTLS bool, resultsPtr interface{}) (h
 		httpClient = createHTTPClient(verifyTLS)
 	}
 
+	// Add a copy of the system cert pool
+	caCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+
+	// Check if the /home/user/.config/containers/certs.d/$IP:$PORT dir exists
+	home := os.Getenv("HOME")
+	clientCertsDir := filepath.Join(home, homeCertsDir, req.Host)
+
+	if dirExists(clientCertsDir) {
+		returnedTLSConfig, err := getTLSConfig(clientCertsDir, caCertPool)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig = returnedTLSConfig
+	} else {
+		// Check if the /etc/containers/certs.d/$IP:$PORT dir exists
+		clientCertsDir := filepath.Join(certsPath, req.Host)
+		if dirExists(clientCertsDir) {
+			returnedTLSConfig, err := getTLSConfig(clientCertsDir, caCertPool)
+			if err != nil && !os.IsPermission(err) {
+				return nil, err
+			} else if err == nil {
+				tlsConfig = returnedTLSConfig
+			}
+		}
+	}
+
+	tlsConfig.BuildNameToCertificate() // nolint: staticcheck
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+	mux.Lock()
+	defer mux.Unlock()
+
+	httpClient.Transport = transport
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -96,6 +150,44 @@ func doHTTPRequest(req *http.Request, verifyTLS bool, resultsPtr interface{}) (h
 	}
 
 	return resp.Header, nil
+}
+
+func getTLSConfig(certsPath string, caCertPool *x509.CertPool) (*tls.Config, error) {
+	clientCert := filepath.Join(certsPath, clientCertFilename)
+	clientKey := filepath.Join(certsPath, clientKeyFilename)
+	caCertFile := filepath.Join(certsPath, caCertFilename)
+
+	cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+	if err != nil {
+		return nil, err
+	}
+
+	caCert, err := ioutil.ReadFile(caCertFile)
+	if err != nil {
+		return nil, err
+	}
+
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+
+	return tlsConfig, nil
+}
+
+func dirExists(d string) bool {
+	fi, err := os.Stat(d)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+
+	if !fi.IsDir() {
+		return false
+	}
+
+	return true
 }
 
 func isURL(str string) bool {
